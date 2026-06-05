@@ -1,0 +1,28 @@
+[package]
+name = "kdiff"
+version = "0.1.0"
+description = "Lightweight, fast diff GUI"
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "kdiff_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+similar = "2"
+rustc-hash = "2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

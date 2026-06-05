@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KDiff</title>
+  </head>
+  <body>
+    <header id="bar">
+      <div class="file-slot" id="slot-left">
+        <span class="side-tag">L</span>
+        <span class="path" id="path-left">左ファイルをドロップ / 参照</span>
+        <button class="ghost" id="pick-left">参照</button>
+      </div>
+      <button class="ghost icon" id="swap" title="左右を入れ替え">⇄</button>
+      <div class="file-slot" id="slot-right">
+        <span class="side-tag">R</span>
+        <span class="path" id="path-right">右ファイルをドロップ / 参照</span>
+        <button class="ghost" id="pick-right">参照</button>
+      </div>
+
+      <button class="ghost icon" id="newwin" title="新しいウィンドウ (Ctrl+N)">＋</button>
+
+      <div class="spacer"></div>
+
+      <div class="stats" id="stats" hidden>
+        <span class="stat add"><i></i><b id="s-add">0</b></span>
+        <span class="stat del"><i></i><b id="s-del">0</b></span>
+        <span class="stat mod"><i></i><b id="s-mod">0</b></span>
+      </div>
+
+      <div class="nav" id="nav" hidden>
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-mode="all" title="すべての行">全体</button>
+          <button class="tab" data-mode="diff" title="変更行と前後だけ">差分のみ</button>
+        </div>
+        <button class="ghost" id="prev" title="前の変更 (Alt+↑)">↑</button>
+        <button class="ghost" id="next" title="次の変更 (Alt+↓)">↓</button>
+        <button class="ghost" id="reset" title="リセットして新しいファイルを選ぶ">リセット</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <div id="lpane" class="pane">
+        <div id="lcontent" class="pcontent"></div>
+      </div>
+      <div id="rpane" class="pane">
+        <div id="rcontent" class="pcontent"></div>
+      </div>
+      <div id="minimap" title="クリックでジャンプ">
+        <div id="mm-marks"></div>
+        <div id="mm-view"></div>
+      </div>
+    </main>
+
+    <div id="toast" hidden></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

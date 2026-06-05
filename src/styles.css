@@ -1,0 +1,238 @@
+:root {
+  --bg: #0d1117;
+  --bg-soft: #161b22;
+  --bg-elev: #1c2230;
+  --border: #2a3038;
+  --fg: #c9d1d9;
+  --fg-dim: #7d8590;
+  --accent: #58a6ff;
+
+  --add-bg: rgba(46, 160, 67, 0.16);
+  --add-strong: rgba(46, 160, 67, 0.45);
+  --add-mark: #3fb950;
+  --del-bg: rgba(248, 81, 73, 0.16);
+  --del-strong: rgba(248, 81, 73, 0.45);
+  --del-mark: #f85149;
+  --mod-bg: rgba(210, 153, 34, 0.14);
+  --mod-mark: #d29922;
+  --blank-bg: rgba(110, 118, 129, 0.06);
+
+  --row-h: 20px;
+  --gutter: 56px;
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, "Segoe UI", "Noto Sans JP", sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ---- top bar ---- */
+#bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 10px;
+  background: linear-gradient(var(--bg-soft), var(--bg));
+  border-bottom: 1px solid var(--border);
+}
+
+.file-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+  max-width: 360px;
+  padding: 4px 6px 4px 4px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.file-slot.drag { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(88,166,255,.25); }
+.side-tag {
+  flex: none;
+  width: 20px; height: 20px;
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 11px;
+  color: #fff; background: #30363d; border-radius: 5px;
+}
+#slot-left .side-tag { background: #1f6feb; }
+#slot-right .side-tag { background: #8957e5; }
+.path {
+  flex: 1; min-width: 0;
+  color: var(--fg-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  direction: rtl; text-align: left;
+}
+.path.set { color: var(--fg); }
+
+.spacer { flex: 1; }
+
+button.ghost {
+  appearance: none;
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .12s;
+}
+button.ghost:hover { color: var(--fg); border-color: var(--accent); background: rgba(88,166,255,.08); }
+button.ghost.icon { padding: 4px 8px; font-size: 14px; }
+
+.stats { display: flex; gap: 10px; padding: 0 4px; }
+.stat { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.stat i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.stat.add i { background: var(--add-mark); }
+.stat.del i { background: var(--del-mark); }
+.stat.mod i { background: var(--mod-mark); }
+.stat b { font-weight: 600; }
+
+.nav { display: flex; align-items: center; gap: 6px; }
+.tabs {
+  display: inline-flex;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 2px;
+  margin-right: 2px;
+}
+.tab {
+  appearance: none;
+  background: transparent;
+  color: var(--fg-dim);
+  border: none;
+  border-radius: 5px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.tab:hover { color: var(--fg); }
+.tab.active { color: var(--fg); background: var(--accent); color: #0d1117; font-weight: 600; }
+
+/* ---- stage ---- */
+#stage { position: relative; height: calc(100% - 44px); display: flex; }
+
+/* Two independently horizontally-scrolling panes; vertical scroll is synced in
+   JS so rows stay aligned. The left pane's vertical scrollbar is hidden (the
+   right pane carries the single visible one). */
+.pane {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: var(--row-h);
+}
+#rpane { border-left: 1px solid var(--border); }
+.pane.drag { box-shadow: inset 0 0 0 2px var(--accent); }
+#lpane::-webkit-scrollbar:vertical { display: none; width: 0; }
+.pcontent { position: relative; }
+
+/* ---- a diff row: [line no | text]; the text column width is --tw per pane ---- */
+.row {
+  position: absolute;
+  left: 0;
+  display: grid;
+  grid-template-columns: var(--gutter) var(--tw, 1fr);
+  height: var(--row-h);
+  white-space: pre;
+}
+.gln, .rln {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: right;
+  padding-right: 8px;
+  color: var(--fg-dim);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+.ltxt, .rtxt { padding: 0 8px; overflow: hidden; }
+
+.row.eq .gln, .row.eq .rln { background: var(--bg); }
+
+.row.del .ltxt { background: var(--del-bg); }
+.row.del .gln  { background: var(--del-bg); color: #f0a5a1; }
+.row.del .rtxt { background: var(--blank-bg); }
+
+.row.ins .rtxt { background: var(--add-bg); }
+.row.ins .rln  { background: var(--add-bg); color: #8ddf9c; }
+.row.ins .ltxt { background: var(--blank-bg); }
+
+.row.mod .ltxt, .row.mod .rtxt { background: var(--mod-bg); }
+.row.mod .gln, .row.mod .rln { color: #e4c168; }
+
+.hi-del { background: var(--del-strong); border-radius: 2px; }
+.hi-ins { background: var(--add-strong); border-radius: 2px; }
+
+/* collapsed/skipped region */
+.row.gap {
+  grid-template-columns: 1fr;
+  cursor: pointer;
+  background: repeating-linear-gradient(
+    -45deg, transparent, transparent 6px,
+    rgba(110,118,129,.05) 6px, rgba(110,118,129,.05) 12px);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.row.gap:hover { background: rgba(88,166,255,.07); }
+.gaptext {
+  color: var(--fg-dim);
+  text-align: center;
+  font-family: -apple-system, "Segoe UI", sans-serif;
+  font-size: 11.5px;
+}
+.row.gap:hover .gaptext { color: var(--accent); }
+
+/* ---- minimap ---- */
+#minimap {
+  position: relative;
+  flex: none;
+  width: 14px;
+  background: var(--bg-soft);
+  border-left: 1px solid var(--border);
+  cursor: pointer;
+}
+#mm-marks { position: absolute; inset: 0; }
+#mm-marks .mk { position: absolute; left: 2px; right: 2px; border-radius: 1px; min-height: 2px; }
+#mm-marks .mk.add { background: var(--add-mark); }
+#mm-marks .mk.del { background: var(--del-mark); }
+#mm-marks .mk.mod { background: var(--mod-mark); }
+#mm-view {
+  position: absolute; left: 0; right: 0;
+  background: rgba(201, 209, 217, 0.14);
+  border: 1px solid rgba(201, 209, 217, 0.3);
+  pointer-events: none;
+}
+
+/* ---- empty + toast ---- */
+#stage:not(.loaded)::after {
+  content: "2つのファイルを開くと差分を表示します";
+  position: absolute; top: 40%; left: 0; right: 0;
+  text-align: center; color: var(--fg-dim);
+  font-family: -apple-system, sans-serif;
+  pointer-events: none;
+}
+#toast {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: #b62324; color: #fff;
+  padding: 8px 14px; border-radius: 8px; font-size: 12.5px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.4);
+}
