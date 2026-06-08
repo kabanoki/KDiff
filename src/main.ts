@@ -35,6 +35,7 @@ let leftPath = "";
 let rightPath = "";
 let summary: Summary | null = null;
 let blocks: Block[] = [];
+let curBlock = -1;                           // change index the jump nav is on
 
 const cache = new Map<number, RowOut>();     // actual row index -> row data
 const loaded = new Set<number>();            // chunk index -> fetched
@@ -343,16 +344,25 @@ function scrollToActualRow(target: number) {
 
 function jump(dir: 1 | -1) {
   if (!blocks.length) return;
-  const topRow = actualRow(topViewRow() + 3);
-  let target: Block | null = null;
-  if (dir === 1) {
-    for (const b of blocks) if (b.start > topRow) { target = b; break; }
-    if (!target) target = blocks[0];
+  const top = actualRow(topViewRow());
+  const rows = Math.ceil(rpane.clientHeight / ROW_H);
+
+  // If the change we last jumped to is still on screen, step from it so next/
+  // prev cycle correctly even at the very bottom, where the scroll clamps and
+  // the change can't sit at the top. Otherwise the user scrolled away, so pick
+  // the next/prev change relative to the current scroll position. Both wrap.
+  if (curBlock >= 0 && curBlock < blocks.length &&
+      blocks[curBlock].start >= top - 3 && blocks[curBlock].start <= top + rows) {
+    curBlock = (curBlock + dir + blocks.length) % blocks.length;
+  } else if (dir === 1) {
+    const i = blocks.findIndex((b) => b.start > top);
+    curBlock = i === -1 ? 0 : i;
   } else {
-    for (let i = blocks.length - 1; i >= 0; i--) if (blocks[i].start < topRow - 3) { target = blocks[i]; break; }
-    if (!target) target = blocks[blocks.length - 1];
+    let i = blocks.length - 1;
+    while (i >= 0 && blocks[i].start >= top) i--;
+    curBlock = i < 0 ? blocks.length - 1 : i;
   }
-  scrollToActualRow(target.start);
+  scrollToActualRow(blocks[curBlock].start);
 }
 
 // ---------- open + compare ----------
@@ -373,6 +383,7 @@ async function compare() {
     return;
   }
   blocks = summary.blocks;
+  curBlock = -1;
   $("stats").hidden = false;
   $("nav").hidden = false;
   $("s-add").textContent = summary.added.toLocaleString();
@@ -391,7 +402,7 @@ async function compare() {
 // Clear everything so a fresh pair of files can be chosen.
 function resetAll() {
   leftPath = ""; rightPath = "";
-  summary = null; blocks = [];
+  summary = null; blocks = []; curBlock = -1;
   cache.clear(); loaded.clear(); pending.clear();
   viewRows = null; viewLen = 0; gaps = []; diffOnly = false;
 
