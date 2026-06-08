@@ -24,6 +24,7 @@ const ROW_H = 20;
 const BUFFER = 16;     // extra rows above/below the viewport
 const CHUNK = 256;     // rows fetched per backend call
 const CONTEXT = 3;     // unchanged lines kept around a change in "diff-only" mode
+const BOTTOM_PAD = ROW_H; // breathing room below the last row at the bottom
 // WebKit cannot lay out / paint elements taller than ~2^24px, so the scroll
 // runway is capped below that and scrollTop is remapped onto the true height.
 const MAX_RUNWAY = 16_000_000;
@@ -241,7 +242,7 @@ function render() {
 function setupGeometry() {
   if (!summary) return;
   forceRender = true; // view geometry changed; next render must rebuild rows
-  virtualH = viewLen * ROW_H;
+  virtualH = viewLen * ROW_H + BOTTOM_PAD;
   runwayH = Math.min(virtualH, MAX_RUNWAY);
   lcontent.style.height = runwayH + "px";
   rcontent.style.height = runwayH + "px";
