@@ -101,6 +101,9 @@ button.ghost.icon { padding: 4px 8px; font-size: 14px; }
 .stat b { font-weight: 600; }
 
 .nav { display: flex; align-items: center; gap: 6px; }
+/* `display:flex` above would override the [hidden] attribute, so re-hide
+   stats/nav until a comparison is loaded. */
+.stats[hidden], .nav[hidden] { display: none; }
 .tabs {
   display: inline-flex;
   background: var(--bg-elev);
