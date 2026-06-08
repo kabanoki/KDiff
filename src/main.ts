@@ -68,6 +68,7 @@ const rcontent = $("rcontent");
 // first view row at the top of the viewport. All collapse to identity when the
 // content fits under the cap.
 function virtualScrollTop(): number {
+  if (runwayH === virtualH) return rpane.scrollTop; // not scaled: exact identity
   const maxRunway = runwayH - rpane.clientHeight;
   if (maxRunway <= 0) return 0;
   return (rpane.scrollTop / maxRunway) * (virtualH - rpane.clientHeight);
@@ -119,6 +120,7 @@ function fetchChunk(chunkIdx: number) {
       rows.forEach((row, i) => cache.set(start + i, row));
       loaded.add(chunkIdx);
       pending.delete(chunkIdx);
+      forceRender = true;
       scheduleRender();
     })
     .catch((e) => {
@@ -193,6 +195,15 @@ function scheduleRender() {
   });
 }
 
+// Skip rebuilding the rows when neither the visible window nor the row offset
+// changed (e.g. scrolling within the current window at scale 1) — native
+// scrolling then moves the existing rows, which is far smoother than rewriting
+// innerHTML every frame. `forceRender` is set when data/geometry changes.
+let lastStart = -1;
+let lastEnd = -1;
+let lastBase = NaN;
+let forceRender = false;
+
 function render() {
   if (!summary) return;
   const vTop = virtualScrollTop();
@@ -209,15 +220,19 @@ function render() {
   // scrolled by scrollTop, so content-space top = i*ROW_H - vTop + scrollTop.
   // Both panes share the same vertical scrollTop (kept in sync).
   const base = rpane.scrollTop - vTop;
-  let lhtml = "";
-  let rhtml = "";
-  for (let i = start; i < end; i++) {
-    const [lh, rh] = rowPair(i, i * ROW_H + base);
-    lhtml += lh;
-    rhtml += rh;
+  if (forceRender || start !== lastStart || end !== lastEnd || base !== lastBase) {
+    let lhtml = "";
+    let rhtml = "";
+    for (let i = start; i < end; i++) {
+      const [lh, rh] = rowPair(i, i * ROW_H + base);
+      lhtml += lh;
+      rhtml += rh;
+    }
+    lcontent.innerHTML = lhtml;
+    rcontent.innerHTML = rhtml;
+    lastStart = start; lastEnd = end; lastBase = base;
+    forceRender = false;
   }
-  lcontent.innerHTML = lhtml;
-  rcontent.innerHTML = rhtml;
 
   updateMinimapView();
 }
@@ -225,6 +240,7 @@ function render() {
 // ---------- geometry / view model ----------
 function setupGeometry() {
   if (!summary) return;
+  forceRender = true; // view geometry changed; next render must rebuild rows
   virtualH = viewLen * ROW_H;
   runwayH = Math.min(virtualH, MAX_RUNWAY);
   lcontent.style.height = runwayH + "px";
@@ -482,9 +498,16 @@ function init() {
   });
 
   // Keep the two panes vertically aligned; horizontal scroll stays independent.
+  // Mirroring scrollTop fires a scroll event on the other pane; that echo must
+  // not write a now-stale value back to the pane the user is scrolling (which
+  // would yank it backwards), so the echoed event is ignored.
+  let ignorePane: HTMLElement | null = null;
   const syncV = (src: HTMLElement, dst: HTMLElement) => {
-    if (dst.scrollTop !== src.scrollTop) dst.scrollTop = src.scrollTop;
     scheduleRender();
+    if (ignorePane === src) { ignorePane = null; return; }
+    if (dst.scrollTop === src.scrollTop) return; // horizontal-only, or already aligned
+    ignorePane = dst;
+    dst.scrollTop = src.scrollTop;
   };
   lpane.addEventListener("scroll", () => syncV(lpane, rpane), { passive: true });
   rpane.addEventListener("scroll", () => syncV(rpane, lpane), { passive: true });

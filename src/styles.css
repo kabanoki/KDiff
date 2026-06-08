@@ -137,6 +137,7 @@ button.ghost.icon { padding: 4px 8px; font-size: 14px; }
   flex: 1;
   min-width: 0;
   overflow: auto;
+  overflow-anchor: none;
   background: var(--bg);
   font-family: var(--mono);
   font-size: 12.5px;
